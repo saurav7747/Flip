@@ -1,0 +1,786 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Coin Toss Pro</title>
+
+<!-- ══ PWA ══ -->
+<link rel="manifest" href="manifest.json">
+<meta name="theme-color" content="#0f172a">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="CoinPro">
+<link rel="apple-touch-icon" href="icon.png">
+<link rel="icon" type="image/png" href="icon.png">
+
+<style>
+@import url('https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@0,400;0,700;0,900;1,400;1,700&family=DM+Sans:wght@300;400;500&display=swap');
+
+/* ═══════════════════════════════
+   RESET & TOKENS
+═══════════════════════════════ */
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+:root {
+  --bg:    #0f172a;
+  --surf:  #1a2540;
+  --g1: #fff4c2; --g2: #fbbf24; --g3: #d97706;
+  --g4: #92400e; --g5: #5c2508; --grim: #78350f;
+  --s1: #f8fafc; --s2: #cbd5e1; --s3: #64748b;
+  --s4: #1e293b; --s5: #0f172a; --srim: #334155;
+  --accent: #f59e0b;
+  --text:   #e2e8f0;
+  --muted:  #475569;
+}
+
+/* ═══════════════════════════════
+   LAYOUT
+═══════════════════════════════ */
+html, body {
+  width: 100%; height: 100%;
+  background: var(--bg);
+  color: var(--text);
+  font-family: 'DM Sans', sans-serif;
+  overflow: hidden;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+/* atmospheric bg */
+body::before {
+  content: '';
+  position: fixed; inset: 0;
+  background:
+    radial-gradient(ellipse 65% 45% at 50% 0%,  rgba(251,191,36,0.09) 0%, transparent 65%),
+    radial-gradient(ellipse 35% 25% at 85% 85%, rgba(148,163,184,0.04) 0%, transparent 55%),
+    radial-gradient(ellipse 28% 20% at 8%  50%, rgba(251,191,36,0.03) 0%, transparent 50%);
+  pointer-events: none;
+}
+
+/* dot grid */
+body::after {
+  content: '';
+  position: fixed; inset: 0;
+  background-image: radial-gradient(rgba(255,255,255,0.025) 1px, transparent 1px);
+  background-size: 40px 40px;
+  pointer-events: none;
+}
+
+.app {
+  position: relative; z-index: 1;
+  display: flex; flex-direction: column;
+  align-items: center; justify-content: center;
+  padding: 2rem 1.5rem 7.5rem;
+  min-height: 100svh;
+  width: 100%;
+  gap: 0;
+}
+
+/* ═══════════════════════════════
+   HEADER
+═══════════════════════════════ */
+.header {
+  text-align: center;
+  margin-bottom: 3rem;
+  animation: riseIn 0.8s cubic-bezier(0.16,1,0.3,1) both;
+}
+.eyebrow {
+  font-size: 0.58rem; letter-spacing: 0.45em;
+  text-transform: uppercase;
+  color: var(--accent); opacity: 0.72;
+  margin-bottom: 0.5rem;
+}
+.headline {
+  font-family: 'Playfair Display', serif;
+  font-size: clamp(2rem, 5vw, 3rem);
+  font-weight: 900; letter-spacing: -0.01em; line-height: 1;
+  background: linear-gradient(135deg, #f8fafc 0%, #94a3b8 100%);
+  -webkit-background-clip: text; -webkit-text-fill-color: transparent;
+  background-clip: text;
+}
+
+/* ═══════════════════════════════
+   COIN SCENE
+═══════════════════════════════ */
+.scene {
+  perspective: 900px;
+  margin-bottom: 16px;
+  animation: riseIn 0.8s cubic-bezier(0.16,1,0.3,1) 0.1s both;
+}
+
+.coin {
+  width: 200px; height: 200px;
+  position: relative;
+  transform-style: preserve-3d;
+  will-change: transform;
+  transform: rotateY(0deg);
+  cursor: pointer;
+}
+
+/* ── FACE BASE ── */
+.face {
+  position: absolute; inset: 0;
+  border-radius: 50%;
+  backface-visibility: hidden;
+  -webkit-backface-visibility: hidden;
+  display: flex; flex-direction: column;
+  align-items: center; justify-content: center;
+  overflow: hidden;
+  user-select: none;
+}
+
+/* ── SAURAV — gold conic ── */
+.face-s {
+  background: conic-gradient(from 0deg at 50% 50%,
+    var(--g5) 0deg,   var(--g4) 30deg,  var(--g3) 70deg,
+    var(--g2) 100deg, var(--g1) 120deg, var(--g2) 140deg,
+    var(--g3) 170deg, var(--g4) 220deg, var(--g5) 270deg,
+    var(--g4) 310deg, var(--g3) 340deg, var(--g5) 360deg
+  );
+  box-shadow:
+    inset 0  4px 12px rgba(255,244,194,0.5),
+    inset 0 -5px 14px rgba(92,37,8,0.65),
+    0 0 0  9px var(--g4), 0 0 0 12px var(--g5), 0 0 0 15px var(--g4),
+    0 22px 55px rgba(0,0,0,0.70), 0 0 45px rgba(251,191,36,0.10);
+}
+.face-s::before {
+  content: ''; position: absolute; inset: 0; border-radius: 50%; z-index: 1;
+  background: radial-gradient(circle at 36% 30%,
+    rgba(255,248,210,0.55) 0%, rgba(255,220,100,0.18) 30%, transparent 60%);
+}
+.face-s::after {
+  content: ''; position: absolute; inset: 15px; border-radius: 50%; z-index: 1;
+  border: 1.5px solid rgba(255,240,160,0.25);
+  box-shadow: inset 0 0 10px rgba(255,240,160,0.08), 0 0 0 1px rgba(92,37,8,0.35);
+}
+
+/* ── SAMAR — silver conic ── */
+.face-m {
+  background: conic-gradient(from 0deg at 50% 50%,
+    var(--s4) 0deg,    var(--s3) 30deg,   var(--s2) 70deg,
+    var(--s1) 100deg,  var(--s2) 130deg,  var(--s3) 170deg,
+    var(--s4) 220deg,  var(--srim) 270deg, var(--s4) 310deg,
+    var(--s3) 340deg,  var(--s4) 360deg
+  );
+  box-shadow:
+    inset 0  4px 12px rgba(248,250,252,0.4),
+    inset 0 -5px 14px rgba(15,23,42,0.75),
+    0 0 0  9px var(--s4), 0 0 0 12px var(--s5), 0 0 0 15px var(--s4),
+    0 22px 55px rgba(0,0,0,0.75), 0 0 45px rgba(148,163,184,0.06);
+  transform: rotateY(180deg);
+}
+.face-m::before {
+  content: ''; position: absolute; inset: 0; border-radius: 50%; z-index: 1;
+  background: radial-gradient(circle at 36% 30%,
+    rgba(248,250,252,0.42) 0%, rgba(200,215,230,0.15) 30%, transparent 60%);
+}
+.face-m::after {
+  content: ''; position: absolute; inset: 15px; border-radius: 50%; z-index: 1;
+  border: 1.5px solid rgba(248,250,252,0.18);
+  box-shadow: inset 0 0 10px rgba(248,250,252,0.05), 0 0 0 1px rgba(15,23,42,0.45);
+}
+
+/* ── COIN CONTENT ── */
+.coin-content {
+  position: relative; z-index: 3;
+  display: flex; flex-direction: column;
+  align-items: center; justify-content: center;
+  gap: 3px; pointer-events: none;
+}
+.coin-name {
+  font-family: 'Playfair Display', serif;
+  font-weight: 900; font-style: italic;
+  font-size: 2.05rem; line-height: 1;
+  letter-spacing: -0.02em;
+}
+.coin-divider { width: 38px; height: 1px; margin: 4px 0; border-radius: 1px; }
+.coin-sub {
+  font-family: 'DM Sans', sans-serif;
+  font-weight: 300; font-size: 0.5rem;
+  letter-spacing: 0.3em; text-transform: uppercase;
+}
+.face-s .coin-name {
+  color: var(--g5);
+  text-shadow: 0 2px 0 rgba(255,244,194,0.5), 0 -1px 2px rgba(92,37,8,0.5);
+}
+.face-s .coin-divider { background: rgba(92,37,8,0.45); }
+.face-s .coin-sub     { color: rgba(92,37,8,0.7); }
+.face-m .coin-name {
+  color: var(--s5);
+  text-shadow: 0 2px 0 rgba(248,250,252,0.45), 0 -1px 2px rgba(15,23,42,0.5);
+}
+.face-m .coin-divider { background: rgba(15,23,42,0.4); }
+.face-m .coin-sub     { color: rgba(15,23,42,0.65); }
+
+/* ── SHADOW ── */
+.coin-shadow {
+  width: 150px; height: 13px;
+  background: radial-gradient(ellipse, rgba(0,0,0,0.6) 0%, transparent 75%);
+  border-radius: 50%;
+  margin-bottom: 3rem;
+  animation: riseIn 0.8s cubic-bezier(0.16,1,0.3,1) 0.15s both;
+  transition: transform 0.3s, opacity 0.3s;
+}
+
+/* ═══════════════════════════════
+   RESULT
+═══════════════════════════════ */
+.result-wrap {
+  height: 60px;
+  display: flex; flex-direction: column;
+  align-items: center; justify-content: center;
+  text-align: center;
+  margin-bottom: 2.5rem;
+  animation: riseIn 0.8s cubic-bezier(0.16,1,0.3,1) 0.2s both;
+}
+.result-name {
+  font-family: 'Playfair Display', serif;
+  font-style: italic; font-weight: 700;
+  font-size: 1.9rem; letter-spacing: -0.01em;
+  opacity: 0; transform: translateY(10px) scale(0.95);
+  transition: opacity 0.45s ease, transform 0.45s cubic-bezier(0.16,1,0.3,1);
+}
+.result-name.visible { opacity: 1; transform: translateY(0) scale(1); }
+.result-name.gold    { color: var(--g2); text-shadow: 0 0 30px rgba(251,191,36,0.4); }
+.result-name.silver  { color: var(--s2); text-shadow: 0 0 30px rgba(203,213,225,0.3); }
+.result-label {
+  font-size: 0.55rem; letter-spacing: 0.35em;
+  text-transform: uppercase; color: var(--muted);
+  margin-top: 5px; opacity: 0; transition: opacity 0.4s 0.2s;
+}
+.result-name.visible ~ .result-label { opacity: 1; }
+
+/* ═══════════════════════════════
+   FLIP BUTTON
+═══════════════════════════════ */
+.btn-wrap {
+  animation: riseIn 0.8s cubic-bezier(0.16,1,0.3,1) 0.3s both;
+}
+.btn-flip {
+  position: relative;
+  background: transparent;
+  border: 1px solid rgba(251,191,36,0.35);
+  color: var(--text);
+  font-family: 'DM Sans', sans-serif;
+  font-size: 0.68rem; font-weight: 500;
+  letter-spacing: 0.3em; text-transform: uppercase;
+  padding: 1rem 3.4rem;
+  cursor: pointer; overflow: hidden;
+  transition: border-color 0.3s, color 0.3s, transform 0.1s;
+  outline: none; -webkit-tap-highlight-color: transparent;
+}
+.btn-flip::before {
+  content: ''; position: absolute; inset: 0;
+  background: linear-gradient(135deg, rgba(251,191,36,0.1) 0%, transparent 60%);
+  opacity: 0; transition: opacity 0.3s;
+}
+.btn-flip::after {
+  content: ''; position: absolute; top: 0; left: -120%;
+  width: 80%; height: 100%;
+  background: linear-gradient(90deg, transparent, rgba(251,191,36,0.14), transparent);
+  transform: skewX(-18deg); transition: left 0.55s ease;
+}
+.btn-flip:hover { border-color: rgba(251,191,36,0.75); color: #fde68a; }
+.btn-flip:hover::before { opacity: 1; }
+.btn-flip:hover::after  { left: 145%; }
+.btn-flip:active { transform: scale(0.96); }
+.btn-flip:disabled { opacity: 0.3; cursor: not-allowed; pointer-events: none; }
+
+/* ═══════════════════════════════
+   STATS
+═══════════════════════════════ */
+.stats {
+  position: fixed; top: 1.5rem; left: 1.5rem;
+  display: flex; gap: 1.8rem;
+  opacity: 0.22; pointer-events: none;
+  animation: fadeIn 1s 0.5s both;
+}
+.stat { text-align: center; }
+.stat-n {
+  display: block;
+  font-family: 'Playfair Display', serif;
+  font-size: 1.3rem; font-weight: 700;
+  color: var(--text); line-height: 1;
+}
+.stat-l {
+  font-size: 0.48rem; letter-spacing: 0.2em;
+  text-transform: uppercase; color: var(--muted);
+}
+
+/* ═══════════════════════════════
+   MODE PILL
+═══════════════════════════════ */
+.mode-pill {
+  position: fixed; top: 1.5rem; right: 1.5rem;
+  font-size: 0.5rem; letter-spacing: 0.25em;
+  text-transform: uppercase; color: var(--muted);
+  padding: 0.28rem 0.7rem;
+  border: 1px solid rgba(255,255,255,0.05);
+  border-radius: 2px; opacity: 0.35; pointer-events: none;
+  transition: color 0.35s, opacity 0.35s;
+  animation: fadeIn 1s 0.5s both;
+}
+.mode-pill.gold   { color: var(--g2); opacity: 0.65; }
+.mode-pill.silver { color: var(--s2); opacity: 0.58; }
+
+/* ═══════════════════════════════
+   HIDDEN CONTROL DOTS
+═══════════════════════════════ */
+.ctrl-ring {
+  position: fixed;
+  bottom: 2.2rem; left: 50%;
+  transform: translateX(-50%);
+  display: flex; gap: 14px; z-index: 20;
+  animation: fadeIn 1.2s 0.6s both;
+}
+.ctrl-dot {
+  width: 52px; height: 52px; border-radius: 50%;
+  background: rgba(255,255,255,0.04);
+  border: 1px solid rgba(255,255,255,0.06);
+  cursor: pointer; padding: 0; opacity: 0.2;
+  transition: opacity 0.3s, transform 0.25s, background 0.3s, border-color 0.3s;
+  -webkit-tap-highlight-color: transparent; outline: none;
+  display: flex; align-items: center; justify-content: center;
+}
+.ctrl-dot:hover   { opacity: 0.65; transform: scale(1.12); }
+.ctrl-dot::after  {
+  content: ''; width: 8px; height: 8px;
+  border-radius: 50%; background: #94a3b8;
+  opacity: 0.5; transition: opacity 0.3s, transform 0.3s;
+}
+.ctrl-dot:hover::after { opacity: 0.9; transform: scale(1.3); }
+
+#dotR.active-random {
+  background: rgba(255,255,255,0.09); border-color: rgba(255,255,255,0.16); opacity: 0.62;
+}
+#dotS.active-gold {
+  background: rgba(251,191,36,0.15); border-color: rgba(251,191,36,0.32); opacity: 0.68;
+}
+#dotM.active-silver {
+  background: rgba(148,163,184,0.14); border-color: rgba(148,163,184,0.28); opacity: 0.63;
+}
+#dotR::after { background: #94a3b8; }
+#dotS::after { background: var(--g2); }
+#dotM::after { background: var(--s2); }
+
+/* ═══════════════════════════════
+   PWA INSTALL BANNER
+═══════════════════════════════ */
+#installBanner {
+  position: fixed;
+  bottom: 1.2rem; left: 50%;
+  transform: translateX(-50%) translateY(20px);
+  width: min(360px, calc(100vw - 2rem));
+  background: #1a2540;
+  border: 1px solid rgba(251,191,36,0.22);
+  border-radius: 14px;
+  padding: 0.85rem 1rem;
+  display: flex; align-items: center; gap: 0.85rem;
+  z-index: 100; opacity: 0; pointer-events: none;
+  transition: opacity 0.4s ease, transform 0.45s cubic-bezier(0.16,1,0.3,1);
+  box-shadow: 0 8px 32px rgba(0,0,0,0.55), 0 0 0 1px rgba(255,255,255,0.03);
+}
+#installBanner .ib-icon img {
+  width: 38px; height: 38px; border-radius: 9px; display: block;
+}
+#installBanner .ib-text {
+  flex: 1; display: flex; flex-direction: column; gap: 3px;
+}
+#installBanner .ib-title {
+  font-family: 'Playfair Display', serif;
+  font-size: 0.82rem; letter-spacing: 0.06em; color: #f1f5f9;
+}
+#installBanner .ib-sub {
+  font-size: 0.58rem; letter-spacing: 0.15em;
+  text-transform: uppercase; color: var(--muted);
+}
+#installBanner .ib-btn {
+  background: linear-gradient(135deg, var(--g2), var(--g3));
+  border: none; color: #0f172a;
+  font-family: 'DM Sans', sans-serif;
+  font-size: 0.67rem; font-weight: 700;
+  letter-spacing: 0.1em; text-transform: uppercase;
+  padding: 0.5rem 1.1rem; border-radius: 7px;
+  cursor: pointer; white-space: nowrap;
+  transition: opacity 0.2s, transform 0.15s;
+}
+#installBanner .ib-btn:hover  { opacity: 0.88; transform: scale(1.04); }
+#installBanner .ib-btn:active { transform: scale(0.97); }
+#installBanner .ib-close {
+  background: none; border: none; color: var(--muted);
+  font-size: 0.75rem; cursor: pointer;
+  padding: 0.2rem 0.3rem; line-height: 1;
+  transition: color 0.2s; flex-shrink: 0;
+}
+#installBanner .ib-close:hover { color: #94a3b8; }
+
+/* ═══════════════════════════════
+   KEYFRAMES
+═══════════════════════════════ */
+@keyframes riseIn {
+  from { opacity: 0; transform: translateY(20px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
+@keyframes fadeIn {
+  from { opacity: 0; }
+  to   { opacity: 1; }
+}
+
+/* ═══════════════════════════════
+   RESPONSIVE
+═══════════════════════════════ */
+@media (max-width: 400px) {
+  .coin { width: 170px; height: 170px; }
+  .face-s .coin-name, .face-m .coin-name { font-size: 1.7rem; }
+  .ctrl-dot { width: 46px; height: 46px; }
+}
+</style>
+</head>
+<body>
+
+<!-- Stats -->
+<div class="stats">
+  <div class="stat">
+    <span class="stat-n" id="nS">0</span>
+    <span class="stat-l">Saurav</span>
+  </div>
+  <div class="stat">
+    <span class="stat-n" id="nM">0</span>
+    <span class="stat-l">Samar</span>
+  </div>
+</div>
+
+<!-- Mode indicator -->
+<div class="mode-pill" id="modePill">Random</div>
+
+<!-- App -->
+<div class="app">
+
+  <div class="header">
+    <div class="eyebrow">The Toss</div>
+    <div class="headline">Coin Toss Pro</div>
+  </div>
+
+  <div class="scene">
+    <div class="coin" id="coin">
+      <div class="face face-s">
+        <div class="coin-content">
+          <div class="coin-name">Saurav</div>
+          <div class="coin-divider"></div>
+          <div class="coin-sub">Fortune</div>
+        </div>
+      </div>
+      <div class="face face-m">
+        <div class="coin-content">
+          <div class="coin-name">Samar</div>
+          <div class="coin-divider"></div>
+          <div class="coin-sub">Destiny</div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="coin-shadow" id="shadow"></div>
+
+  <div class="result-wrap">
+    <div class="result-name" id="resultName"></div>
+    <div class="result-label">— result —</div>
+  </div>
+
+  <div class="btn-wrap">
+    <button class="btn-flip" id="btnFlip">Flip Coin</button>
+  </div>
+
+</div>
+
+<!-- Hidden control dots -->
+<div class="ctrl-ring">
+  <button class="ctrl-dot active-random" id="dotR" aria-label="Random mode"></button>
+  <button class="ctrl-dot" id="dotS" aria-label="Force Saurav"></button>
+  <button class="ctrl-dot" id="dotM" aria-label="Force Samar"></button>
+</div>
+
+<!-- PWA Install Banner -->
+<div id="installBanner">
+  <div class="ib-icon"><img src="icon.png" alt="CoinPro"></div>
+  <div class="ib-text">
+    <span class="ib-title">Coin Toss Pro</span>
+    <span class="ib-sub">Install as app</span>
+  </div>
+  <button class="ib-btn" onclick="installApp()">Install</button>
+  <button class="ib-close" onclick="hideBanner()">✕</button>
+</div>
+
+<script>
+/* ═══════════════════════════════════════════════
+   STATE
+═══════════════════════════════════════════════ */
+const S = {
+  mode:       'random',   // 'saurav' | 'samar' | 'random'
+  busy:       false,
+  deg:        0,          // accumulated rotateY
+  nS:         0,
+  nM:         0,
+  tapCount:   0,
+  tapTimer:   null,
+  TAP_WIN:    320,        // ms window for multi-tap detection
+};
+
+/* ═══════════════════════════════════════════════
+   REFS
+═══════════════════════════════════════════════ */
+const coin       = document.getElementById('coin');
+const btnFlip    = document.getElementById('btnFlip');
+const resultName = document.getElementById('resultName');
+const modePill   = document.getElementById('modePill');
+const shadow     = document.getElementById('shadow');
+const nSEl       = document.getElementById('nS');
+const nMEl       = document.getElementById('nM');
+const dotR       = document.getElementById('dotR');
+const dotS       = document.getElementById('dotS');
+const dotM       = document.getElementById('dotM');
+
+coin.style.transform = 'rotateY(0deg)';
+
+/* ═══════════════════════════════════════════════
+   AUDIO — Web Audio API
+═══════════════════════════════════════════════ */
+let actx = null;
+const getCtx = () => {
+  if (!actx) actx = new (window.AudioContext || window.webkitAudioContext)();
+  return actx;
+};
+
+function playWhoosh() {
+  try {
+    const c = getCtx(), t = c.currentTime;
+    const buf = c.createBuffer(1, c.sampleRate * 0.55, c.sampleRate);
+    const d = buf.getChannelData(0);
+    for (let i = 0; i < d.length; i++)
+      d[i] = (Math.random() * 2 - 1) * Math.sin(Math.PI * i / d.length) * 0.18;
+    const src = c.createBufferSource(); src.buffer = buf;
+    const f = c.createBiquadFilter(); f.type = 'bandpass';
+    f.frequency.setValueAtTime(4000, t);
+    f.frequency.exponentialRampToValueAtTime(600, t + 0.55);
+    f.Q.value = 3.5;
+    const g = c.createGain();
+    g.gain.setValueAtTime(0.6, t);
+    g.gain.exponentialRampToValueAtTime(0.001, t + 0.55);
+    src.connect(f); f.connect(g); g.connect(c.destination);
+    src.start(t);
+  } catch(e) {}
+}
+
+function playClink() {
+  try {
+    const c = getCtx(), t = c.currentTime;
+    [0, 0.012, 0.028].forEach((dt, i) => {
+      const o = c.createOscillator(), g = c.createGain();
+      o.type = 'sine';
+      o.frequency.setValueAtTime(2100 - i * 230, t + dt);
+      o.frequency.exponentialRampToValueAtTime(480, t + dt + 0.22);
+      g.gain.setValueAtTime(0.26 - i * 0.05, t + dt);
+      g.gain.exponentialRampToValueAtTime(0.001, t + dt + 0.25);
+      o.connect(g); g.connect(c.destination);
+      o.start(t + dt); o.stop(t + dt + 0.28);
+    });
+  } catch(e) {}
+}
+
+/* ═══════════════════════════════════════════════
+   MODE
+═══════════════════════════════════════════════ */
+function setMode(m) {
+  S.mode = m;
+  dotR.className = 'ctrl-dot' + (m === 'random' ? ' active-random' : '');
+  dotS.className = 'ctrl-dot' + (m === 'saurav' ? ' active-gold'   : '');
+  dotM.className = 'ctrl-dot' + (m === 'samar'  ? ' active-silver' : '');
+  modePill.textContent = m === 'saurav' ? 'Saurav' : m === 'samar' ? 'Samar' : 'Random';
+  modePill.className   = 'mode-pill' + (m === 'saurav' ? ' gold' : m === 'samar' ? ' silver' : '');
+}
+
+dotR.addEventListener('click', () => setMode('random'));
+dotS.addEventListener('click', () => setMode('saurav'));
+dotM.addEventListener('click', () => setMode('samar'));
+
+/* ═══════════════════════════════════════════════
+   EASING
+═══════════════════════════════════════════════ */
+const easeOutCubic = t => 1 - Math.pow(1 - t, 3);
+
+/* ═══════════════════════════════════════════════
+   FLIP ANIMATION  (requestAnimationFrame)
+═══════════════════════════════════════════════ */
+let rafId = null;
+
+function flip(forced) {
+  if (S.busy) return;
+  S.busy = true;
+  btnFlip.disabled = true;
+
+  // Clear previous result
+  resultName.classList.remove('visible', 'gold', 'silver');
+  resultName.textContent = '';
+
+  // Resolve result
+  const result = forced
+    ? forced
+    : S.mode === 'saurav' ? 'saurav'
+    : S.mode === 'samar'  ? 'samar'
+    : (Math.random() < 0.5 ? 'saurav' : 'samar');
+
+  const spins  = 5 + Math.floor(Math.random() * 6);   // 5–10 full spins
+  const dur    = 1300 + Math.floor(Math.random() * 700); // 1.3–2.0 s
+
+  // saurav = 0° mod 360 | samar = 180° mod 360
+  const wantRem = result === 'saurav' ? 0 : 180;
+  const base    = S.deg + spins * 360;
+  const curRem  = ((base % 360) + 360) % 360;
+  const diff    = ((wantRem - curRem) + 360) % 360;
+  const target  = base + diff;
+
+  const startDeg = S.deg;
+  const delta    = target - startDeg;
+  const t0       = performance.now();
+
+  playWhoosh();
+  if (rafId) cancelAnimationFrame(rafId);
+
+  function tick(now) {
+    const p = Math.min((now - t0) / dur, 1);
+    const e = easeOutCubic(p);
+    const cur = startDeg + delta * e;
+
+    coin.style.transform = `rotateY(${cur}deg)`;
+
+    // Shadow breathes with spin
+    const pulse = Math.sin(p * Math.PI);
+    shadow.style.opacity   = (0.4 + pulse * 0.35).toFixed(3);
+    shadow.style.transform = `scaleX(${(0.55 + pulse * 0.6).toFixed(3)})`;
+
+    if (p < 1) {
+      rafId = requestAnimationFrame(tick);
+    } else {
+      coin.style.transform   = `rotateY(${target}deg)`;
+      S.deg                  = target;
+      shadow.style.opacity   = '0.5';
+      shadow.style.transform = 'scaleX(1)';
+
+      playClink();
+      bounce(target, () => {
+        showResult(result);
+        S.busy = false;
+        btnFlip.disabled = false;
+      });
+    }
+  }
+
+  rafId = requestAnimationFrame(tick);
+}
+
+/* ═══════════════════════════════════════════════
+   BOUNCE
+═══════════════════════════════════════════════ */
+function bounce(fixedDeg, cb) {
+  const frames = [0, -18,  0, -8,  0, -3, 0];
+  const delays = [0,  75, 70, 55, 50,  40, 0];
+  let i = 0;
+  function step() {
+    coin.style.transform = `rotateY(${fixedDeg}deg) translateY(${frames[i]}px)`;
+    i++;
+    if (i < frames.length) setTimeout(step, delays[i]);
+    else { coin.style.transform = `rotateY(${fixedDeg}deg)`; cb(); }
+  }
+  step();
+}
+
+/* ═══════════════════════════════════════════════
+   SHOW RESULT
+═══════════════════════════════════════════════ */
+function showResult(result) {
+  if (result === 'saurav') {
+    resultName.textContent = 'Saurav';
+    resultName.className   = 'result-name visible gold';
+    nSEl.textContent = ++S.nS;
+  } else {
+    resultName.textContent = 'Samar';
+    resultName.className   = 'result-name visible silver';
+    nMEl.textContent = ++S.nM;
+  }
+}
+
+/* ═══════════════════════════════════════════════
+   TAP GESTURE SYSTEM
+   1 tap  → normal flip (current mode)
+   2 taps → force Samar
+   3 taps → force Saurav
+═══════════════════════════════════════════════ */
+btnFlip.addEventListener('click', () => {
+  S.tapCount++;
+  clearTimeout(S.tapTimer);
+  S.tapTimer = setTimeout(() => {
+    const taps = S.tapCount;
+    S.tapCount = 0;
+    if      (taps === 1) flip();
+    else if (taps === 2) flip('samar');
+    else                 flip('saurav');
+  }, S.TAP_WIN);
+});
+
+/* Spacebar shortcut */
+document.addEventListener('keydown', e => {
+  if (e.code === 'Space' && !S.busy) { e.preventDefault(); flip(); }
+});
+
+/* ═══════════════════════════════════════════════
+   PWA INSTALL PROMPT
+═══════════════════════════════════════════════ */
+let deferredPrompt = null;
+
+window.addEventListener('beforeinstallprompt', e => {
+  e.preventDefault();
+  deferredPrompt = e;
+  // Show banner only if not already installed
+  if (!window.matchMedia('(display-mode: standalone)').matches) {
+    const b = document.getElementById('installBanner');
+    b.style.opacity        = '1';
+    b.style.transform      = 'translateX(-50%) translateY(0)';
+    b.style.pointerEvents  = 'auto';
+  }
+});
+
+function installApp() {
+  if (!deferredPrompt) return;
+  deferredPrompt.prompt();
+  deferredPrompt.userChoice.then(c => {
+    if (c.outcome === 'accepted') console.log('[PWA] Installed ✓');
+    deferredPrompt = null;
+    hideBanner();
+  });
+}
+
+function hideBanner() {
+  const b = document.getElementById('installBanner');
+  b.style.opacity       = '0';
+  b.style.transform     = 'translateX(-50%) translateY(20px)';
+  b.style.pointerEvents = 'none';
+}
+
+window.addEventListener('appinstalled', hideBanner);
+
+/* ═══════════════════════════════════════════════
+   SERVICE WORKER REGISTRATION
+═══════════════════════════════════════════════ */
+if ('serviceWorker' in navigator) {
+  window.addEventListener('load', () => {
+    navigator.serviceWorker.register('./sw.js')
+      .then(r => console.log('[SW] Registered:', r.scope))
+      .catch(e => console.warn('[SW] Failed:', e));
+  });
+}
+</script>
+</body>
+</html>
